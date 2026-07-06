@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<!--
+
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Medication Coupon Tool — Prescription Savings, Copay Cards & Patient Assistance</title>
+<meta name="description" content="Free tool to find prescription savings programs — manufacturer copay cards, patient assistance programs (PAPs), and discount cards like GoodRx — so you can afford your medications. Includes options for Medicaid, Medicare, commercial, and uninsured patients.">
+<meta property="og:title" content="Medication Coupon Tool">
+<meta property="og:description" content="Find copay cards, patient assistance programs, and discounts so you can afford your prescriptions — for Medicaid, Medicare, commercial, and uninsured patients.">
+<style>
+  /* ---- COLORS. Red / orange / pale-pink theme. Change these to re-skin. ---- */
+  :root{
+    --bg:#fff5f4;          /* pale pink page */
+    --card:#ffffff;
+    --ink:#3d2120;         /* warm dark ink */
+    --muted:#94706e;
+    --line:#f4d9d6;        /* soft pink border */
+    --brand:#d83a3a;       /* red */
+    --brand-dark:#a82424;  /* deep red */
+    --orange:#ef7d34;      /* orange */
+    --orange-dark:#bc5810;
+    --pink:#fce3e6;        /* pale pink accent */
+    --instant:#bc5810;     /* orange text = ready today */
+    --instant-bg:#fdebdb;
+    --slow:#a82424;        /* red text = takes a few days */
+    --slow-bg:#fbe1e1;
+    --info:#b03a52;        /* pink text */
+    --info-bg:#fce3e9;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.55;
+  }
+
+  /* ---- Header with a stylized title ---- */
+  header{
+    background:linear-gradient(135deg,var(--brand) 0%,var(--orange) 100%);
+    color:#fff;padding:34px 20px 30px;text-align:center;
+  }
+  .brandtitle{
+    font-family:Georgia,"Times New Roman",serif;
+    font-weight:700;font-size:5.0rem;letter-spacing:.5px;margin:0;
+    text-shadow:0 1px 0 rgba(0,0,0,.08);
+  }
+  .brandtitle .accent{color:#ffe2cf;font-style:italic}
+  .rule{width:74px;height:4px;background:#ffe2cf;border-radius:3px;margin:14px auto 0;opacity:.9}
+  .subtitle{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:#fff;font-size:1.08rem;font-weight:400;line-height:1.45;
+    max-width:560px;margin:12px auto 0;opacity:.96;
+  }
+
+  .wrap{max-width:860px;margin:0 auto;padding:0 18px}
+
+  /* tab buttons */
+  nav{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;max-width:860px;margin:16px auto 0;padding:0 18px}
+  nav button{
+    border:1px solid var(--line);background:var(--card);color:var(--ink);
+    padding:10px 18px;border-radius:999px;cursor:pointer;font-size:.95rem;font-weight:600;
+  }
+  nav button[aria-selected="true"]{background:var(--brand);color:#fff;border-color:var(--brand)}
+
+  main{max-width:860px;margin:18px auto 60px;padding:0 18px}
+  .panel{display:none}
+  .panel.active{display:block}
+
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:18px;margin:14px 0;
+  }
+  .card.center{text-align:center}
+  h2{font-size:1.18rem;margin:.2em 0 .55em}
+  h3{font-size:1rem;margin:.4em 0 .3em}
+  .muted{color:var(--muted)}
+  .small{font-size:.85rem}
+  .step-num{display:inline-block;background:var(--brand);color:#fff;font-size:.78rem;font-weight:700;
+            border-radius:999px;padding:2px 11px;margin-bottom:8px}
+
+  label{font-weight:600;display:block;margin-bottom:6px}
+  select,input[type=text]{
+    width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;
+    font-size:1rem;background:#fff;color:var(--ink);
+  }
+  .center select{max-width:420px;margin:0 auto}
+
+  /* timing choice buttons */
+  .choices{display:flex;gap:10px;flex-wrap:wrap}
+  .choice{
+    flex:1 1 220px;text-align:left;border:1.5px solid var(--line);background:#fff;color:var(--ink);
+    border-radius:12px;padding:14px 16px;cursor:pointer;font-size:.98rem;font-weight:600;
+  }
+  .choice small{display:block;font-weight:400;color:var(--muted);margin-top:4px}
+  .choice[aria-pressed="true"]{border-color:var(--brand);background:var(--pink)}
+
+  /* badges */
+  .badge{display:inline-block;font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:999px;margin:0 4px 4px 0;letter-spacing:.02em}
+  .b-instant{background:var(--instant-bg);color:var(--instant)}
+  .b-slow{background:var(--slow-bg);color:var(--slow)}
+  .b-info{background:var(--info-bg);color:var(--info)}
+
+  .prog{border:1px solid var(--line);border-radius:12px;padding:13px 14px;margin:10px 0;background:#fffafa}
+  .prog h3{margin-top:0}
+  a{color:var(--brand-dark);font-weight:600}
+  a:hover{color:var(--brand)}
+
+  .callout{border-left:4px solid var(--orange);background:#fdeee2;padding:12px 14px;border-radius:0 10px 10px 0;margin:12px 0}
+  .callout.warn{border-color:var(--brand);background:var(--slow-bg)}
+  .reclabel{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--brand-dark);margin:14px 0 2px}
+
+  .hidden{display:none}
+  footer{max-width:860px;margin:0 auto 50px;padding:0 18px;color:var(--muted);font-size:.82rem}
+  .disclaimer{background:#fff;border:1px dashed var(--line);border-radius:12px;padding:14px 16px;margin-top:18px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1 class="brandtitle">Copay <span class="accent">Compass</span></h1>
+  <p class="subtitle">Navigate prescription savings programs - copay cards, manufacturer coupons, and patient assistance - so you can afford your medications.</p>
+  <div class="rule"></div>
+</header>
+
+<nav role="tablist" aria-label="Sections">
+  <button role="tab" aria-selected="true"  data-tab="start">Start Here</button>
+  <button role="tab" aria-selected="false" data-tab="all">Other Resources</button>
+</nav>
+
+<main>
+
+  <!-- ============ START HERE: guided 3-step flow ============ -->
+  <section id="start" class="panel active" role="tabpanel">
+
+    <!-- NODE 1 — insurance (centered) -->
+    <div class="card center">
+      <h2>What's the patient's insurance situation?</h2>
+      <select id="ins" aria-label="Insurance type">
+        <option value="">— choose one —</option>
+        <option value="commercial">Commercial / employer / marketplace plan</option>
+        <option value="medicare">Medicare (incl. Part D)</option>
+        <option value="medicaid">Medicaid</option>
+        <option value="uninsured">Uninsured / no drug coverage</option>
+        <option value="unsure">Not sure</option>
+      </select>
+    </div>
+
+    <!-- NODE 2 — timing -->
+    <div id="step2" class="card hidden">
+      <h2>How soon does it need to work?</h2>
+      <p class="muted small">Some options work at the pharmacy counter today. Others take a few days to set up.</p>
+      <div class="choices">
+        <button class="choice" data-time="today" aria-pressed="false">
+          It has to work today
+          <small>The patient is at the pharmacy now, or can't go without the medication.</small>
+        </button>
+        <button class="choice" data-time="wait" aria-pressed="false">
+          It's okay to wait a few days to start
+          <small>There's time to set something up before the first dose is needed.</small>
+        </button>
+      </div>
+    </div>
+
+    <!-- NODE 3 — drug lookup -->
+    <div id="step3" class="card hidden">
+      <h2>What drug is prescribed?</h2>
+      <label for="q" class="small muted">Brand or generic name</label>
+      <input type="text" id="q" placeholder="e.g. Eliquis, apixaban, fidaxomicin…" autocomplete="off">
+    </div>
+    <div id="drugResult"></div>
+
+  </section>
+
+  <!-- ============ OTHER RESOURCES ============ -->
+  <section id="all" class="panel" role="tabpanel">
+    <div class="card">
+      <h2>Other resources</h2>
+      <p class="muted small">General programs that work across many drugs, grouped by who they help.</p>
+    </div>
+    <div id="hub"></div>
+  </section>
+
+  <div class="disclaimer small muted">
+    <strong>Please read.</strong> This tool is a starting reference, not medical, legal, or financial advice.
+    Program rules, eligibility, and dollar amounts change frequently. Confirm current terms on each official
+    link before relying on it. Information last checked June 2026.
+  </div>
+
+</main>
+
+<footer>
+ 
+</footer>
+
+<script>
+
+const HELP_TYPES = {
+  copay: {
+    name:"Manufacturer copay card",
+    blurb:"Lowers the copay at the pharmacy, sometimes to ~$0–$10. Free to use, works immediately.",
+    catch:"Only valid with commercial/employer/marketplace insurance — never Medicaid, Medicare, TRICARE, or VA.",
+    fits:["commercial"], speed:"instant"
+  },
+  discount: {
+    name:"Cash discount card (GoodRx, SingleCare)",
+    blurb:"A discounted cash price you pay INSTEAD of using insurance. Free, instant, anyone can use it.",
+    catch:"Can't be combined with insurance. Compare GoodRx vs SingleCare. Prices differ by pharmacy.",
+    fits:["uninsured","medicare","medicaid","commercial","unsure"], speed:"instant"
+  },
+  pap: {
+    name:"Patient Assistance Program (PAP)",
+    blurb:"The drug maker provides the medicine free or very cheap to people who can't afford it. Income-based (often up to 200–400% of the federal poverty level).",
+    catch:"Needs an application and proof of income, and usually that the patient is uninsured or underinsured. Takes a few days to weeks but often the cheapest answer.",
+    fits:["uninsured","medicare","medicaid"], speed:"days"
+  },
+  charity: {
+    name:"Charity copay foundation (PAN, HealthWell)",
+    blurb:"Nonprofits that grant money toward copays — mainly for insured patients, including people on Medicare.",
+    catch:"Funds are disease-specific and open and close through the year. You have to check whether a fund for that condition is open, then apply.",
+    fits:["medicare","commercial"], speed:"days"
+  }
+};
+
+
+const DRUGS = [
+  {
+    name:"Humira", generic:"adalimumab", aliases:["humira","adalimumab","adalimumab-adbm","cyltezo"],
+    use:"Autoimmune biologic (TNF inhibitor) — RA, psoriasis, Crohn's, ulcerative colitis, and more",
+    programs:[
+      { title:"HUMIRA Complete Savings Card", who:"commercial", speed:"instant",
+        desc:"Commercially insured patients may pay as little as $0/month. Not valid with government insurance.",
+        link:"https://www.humira.com/humira-complete/cost-and-copay" },
+      { title:"myAbbVie Assist (Patient Assistance Program)", who:"any", speed:"days",
+        desc:"Provides Humira free to qualifying patients who are uninsured or have limited coverage. Apply through myAbbVie Assist.",
+        link:"https://www.abbvie.com/patients/patient-support/patient-assistance.html"},
+      { title:"Medicare Part D Plans", who:"Medicare", speed:"instant",
+        desc:"$0-$2,100‡ or less per month, depending on coverage phase. Low Income Subsidy also available. Please Verify.",
+        link:"https://www.humira.com/cost"},
+      { title:"Medicaid", who:"Medicaid", speed:"instant",
+        desc:"$$8 or less per month, depending on state plan. Please Verify.",
+        link:"https://www.humira.com/cost"}
+    ]
+  },
+  {
+    name:"Enbrel", generic:"etanercept", aliases:["enbrel","etanercept","erelzi","eticovo"],
+    use:"Autoimmune biologic (TNF inhibitor) — RA, psoriasis, psoriatic arthritis",
+    programs:[
+      { title:"Amgen SupportPlus Co-Pay Card", who:"commercial", speed:"instant",
+        desc:"Commercially insured patients may pay as little as $0 per fill, regardless of financial need (verify). Not valid with government insurance. 1-833-442-6436 (1-833-44AMGEN).",
+        link:"https://www.enbrel.com/support" },
+      { title:"Amgen Safety Net Foundation", who:"uninsured, Medicare", speed:"days",
+        desc:"Provides Enbrel free to eligible uninsured/underinsured patients who qualify. 1-833-442-6436.",
+        link:"https://www.amgensafetynetfoundation.com/eligibility.html" },
+    ]
+  },
+  {
+    name:"Dupixent", generic:"dupilumab", aliases:["dupixent","dupilumab"],
+    use:"Biologic for eczema, asthma, COPD, and other type-2 inflammatory conditions",
+    programs:[
+      { title:"DUPIXENT MyWay Copay Card", who:"commercial", speed:"instant",
+        desc:"Commercially insured patients may pay as little as $0 per fill (up to $13,000/year; verify). Not valid with government insurance. 1-844-387-4936 (1-844-DUPIXENT).",
+        link:"https://www.dupixent.com/support-savings/copay-card-insurance" },
+      { title:"DUPIXENT MyWay Patient Assistance Program", who:"any", speed:"days",
+        desc:"Financial assistance for Dupixent for eligible patients who are uninsured, underinsured, OR on Medicare Part D — up to 400% of the federal poverty level, via Sanofi Patient Connection. Notable because it includes Medicare patients. 1-844-387-4936.",
+        link:"https://www.dupixent.com/support-savings/dupixent-my-way" }
+    ]
+  },
+  {
+    name:"EpiPen", generic:"epinephrine auto-injector", aliases:["epipen","epinephrine","adrenaclick","auvi-q","neffy"],
+    use:"Epinephrine auto-injector for severe allergic reactions (anaphylaxis)",
+    programs:[
+      { title:"Authorized generic / cash price — compare", who:"any", speed:"instant",
+        desc:"The authorized generic is about $150–$300 for a 2-pack via GoodRx — often the fastest real answer. Also worth knowing: neffy (epinephrine nasal spray) and other generic auto-injectors exist, and many states cap epinephrine at about $25 per 30 days.",
+        links:[
+          { label:"GoodRx (epinephrine / EpiPen generic)", url:"https://www.goodrx.com/epinephrine-epipen" }
+        ] },
+      { title:"Viatris EpiPen Savings Card", who:"commercial", speed:"instant",
+        desc:"Commercially insured patients: up to $300 off per brand 2-pack (max 3 cartons per fill), or $25 off per authorized-generic 2-pack (verify). Not valid with government insurance. Verify for exact details.",
+        link:"https://www.activatethecard.com/viatrisadvocate/epipen/welcome.html" },
+      { title:"Viatris Patient Assistance Program", who:"uninsured", speed:"days",
+        desc:"Fee Assistance EpiPen for patients with demonstrated financial need who qualify.",
+        link:"https://www.viatris.com/en-us/lm/united-states/patient-assistance-program" }
+    ]
+  },
+  {
+    name:"Biktarvy", generic:"bictegravir/emtricitabine/tenofovir alafenamide", aliases:["biktarvy","bictegravir"],
+    use:"Single-tablet HIV treatment",
+    programs:[
+      { title:"Gilead Advancing Access Co-Pay Card", who:"commercial", speed:"instant",
+        desc:"Commercially insured patients may pay as little as $0 (up to $7,200/year, no monthly limit; verify). Not valid with government insurance. 1-800-226-2056.",
+        link:"https://www.gileadadvancingaccess.com" },
+      { title:"Gilead Advancing Access Patient Assistance Program", who:"uninsured", speed:"days",
+        desc:"Free Biktarvy for eligible patients who are uninsured or whose insurance doesn't cover it, typically up to ~500% of the federal poverty level (case-by-case). 1-800-226-2056.",
+        link:"https://www.gileadadvancingaccess.com" },
+      
+    ]
+  },
+  {
+    name:"Airsupra", generic:"albuterol/budesonide", aliases:["airsupra"],
+    use:"As-needed rescue inhaler for asthma (bronchodilator + steroid)",
+    programs:[
+      { title:"Airsupra Savings Card", who:"commercial or uninsured", speed:"instant",
+        desc:"Eligible commercially insured patients may pay as little as $0 (verify). Not valid with government insurance.",
+        link:"https://www.azpatientsupport.com/home/commercially-insured.html?brand=AIRSUPRA&role=Patient" },
+      { title:"AZ&Me Prescription Savings Program", who:"uninsured or medicare", speed:"days",
+        desc:"AstraZeneca's program may provide this medicine free to eligible patients who are uninsured OR have Medicare and meet income limits (about 300% of the federal poverty level; up to 500% for rare-disease products). Apply at azandmeapp.com or 1-800-292-6363.",
+        link:"https://www.azandmeapp.com/included-medications" },
+      { title:"AstraZeneca' Direct", who:"any", speed:"days",
+        desc:"AstraZeneca's program offers direct purchase to eligible patients and may be eligible for reimbursement by HSA or FSA. Apply at azpatientdirect.com or 1-844-4AZ-PATIENTS (1-844-429-7282).",
+        link:"https://www.azpatientdirect.com/airsupra" }    
+      ]
+  },
+  {
+    name:"Baxfendy", generic:"baxdrostat", aliases:["baxfendy","baxdrostat"],
+    use:"Add-on pill for uncontrolled / resistant high blood pressure (aldosterone synthase inhibitor)",
+    programs:[
+      { title:"Baxfendy Savings Card", who:"commercial or uninsured", speed:"instant",
+        desc:"AstraZeneca may offer a copay savings card for commercially insured patients — verify at azpatientsupport.com. Not valid with government insurance.",
+        link:"https://www.azpatientsupport.com" },
+      { title:"AZ&Me Prescription Savings Program", who:"uninsured or medicare", speed:"days",
+        desc:"AstraZeneca's program may provide this medicine free to eligible patients who are uninsured OR have Medicare and meet income limits (about 300% of the federal poverty level; up to 500% for rare-disease products). Apply at azandmeapp.com or 1-800-292-6363.",
+        link:"https://www.azandmeapp.com/included-medications" },
+    { title:"AstraZeneca' Direct", who:"any", speed:"days",
+        desc:"AstraZeneca's program offers direct purchase to eligible patients and may be eligible for reimbursement by HSA or FSA. Apply at azpatientdirect.com or 1-844-4AZ-PATIENTS (1-844-429-7282).",
+        link:"https://www.azpatientdirect.com/baxfendy" }
+    ]
+  },
+  {
+    name:"Bevespi Aerosphere", generic:"glycopyrrolate/formoterol", aliases:["bevespi"],
+    use:"COPD maintenance inhaler (LAMA + LABA)",
+    programs:[
+      { title:"Bevespi Savings Card", who:"commercial or insunsured", speed:"instant",
+        desc:"Eligible commercially insured patients or uninsured patients may pay no more than $35 per 30-day supply (verify). Not valid with government insurance.",
+        link:"https://www.azpatientsupport.com" },
+      { title:"AZ&Me Prescription Savings Program", who:"uninsured or medicare", speed:"days",
+        desc:"AstraZeneca's program may provide this medicine free to eligible patients who are uninsured OR have Medicare and meet income limits (about 300% of the federal poverty level; up to 500% for rare-disease products). Apply at azandmeapp.com or 1-800-292-6363.",
+        link:"https://www.azandmeapp.com/included-medications" },
+       { title:"AstraZeneca' Direct", who:"any", speed:"days",
+        desc:"AstraZeneca's program offers direct purchase to eligible patients and may be eligible for reimbursement by HSA or FSA. Apply at azpatientdirect.com or 1-844-4AZ-PATIENTS (1-844-429-7282).",
+        link:"https://www.azpatientdirect.com/bevespi" }
+    ]
+  },
+  {
+    name:"Breztri Aerosphere", generic:"budesonide/glycopyrrolate/formoterol", aliases:["breztri"],
+    use:"COPD maintenance inhaler (triple therapy)",
+    programs:[
+      { title:"Breztri Savings Card", who:"uninsured or commercial", speed:"instant",
+        desc:"Commercially insured — or uninsured — patients may pay no more than $35 per 30-day supply (verify). Not valid with government insurance.",
+        link:"https://www.azpatientsupport.com" },
+      { title:"AZ&Me Prescription Savings Program", who:"uninsured or medicare", speed:"days",
+        desc:"AstraZeneca's program may provide this medicine free to eligible patients who are uninsured OR have Medicare and meet income limits (about 300% of the federal poverty level; up to 500% for rare-disease products). Apply at azandmeapp.com or 1-800-292-6363.",
+        link:"https://www.azandmeapp.com/included-medications" },
+      { title:"AstraZeneca' Direct", who:"any", speed:"days",
+        desc:"AstraZeneca's program offers direct purchase to eligible patients and may be eligible for reimbursement by HSA or FSA. Apply at azpatientdirect.com or 1-844-4AZ-PATIENTS (1-844-429-7282).",
+        link:"https://www.azpatientdirect.com/breztri" }
+    ]
+  },
+  {
+    name:"Lokelma", generic:"sodium zirconium cyclosilicate", aliases:["lokelma"],
+    use:"Treatment for high potassium (hyperkalemia)",
+    programs:[
+      { title:"Lokelma Co-pay Savings Card", who:"commercial", speed:"instant",
+        desc:"Eligible commercially insured patients may pay as little as $0/month (verify). Not valid with government insurance.",
+        link:"https://www.lokelma.com/support-program/savings-card" },
+      { title:"AZ&Me Prescription Savings Program", who:"uninsured or medicare", speed:"days",
+        desc:"AstraZeneca's program may provide this medicine free to eligible patients who are uninsured OR have Medicare and meet income limits (about 300% of the federal poverty level; up to 500% for rare-disease products). Apply at azandmeapp.com or 1-800-292-6363.",
+        link:"https://www.azandmeapp.com/included-medications" },
+          
+      ]
+  },
+  {
+    name:"Calquence", generic:"acalabrutinib", aliases:["calquence","acalabrutinib"],
+    use:"Oral cancer therapy (BTK inhibitor) — CLL and mantle cell lymphoma",
+    programs:[
+      { title:"Calquence Co-pay Savings (Access 360)", who:"commercial", speed:"instant",
+        desc:"Eligible commercially insured patients may reduce out-of-pocket cost through AstraZeneca Access 360 (verify amount). Not valid with Medicare, Medicaid, or other government insurance. Access 360: 1-844-275-2360.",
+        link:"https://www.azpatientsupport.com"},
+      { title:"AZ&Me Prescription Savings Program", who:"uninsured or medicare", speed:"days",
+        desc:"AstraZeneca's program may provide this medicine free to eligible patients who are uninsured OR have Medicare and meet income limits (about 300% of the federal poverty level; up to 500% for rare-disease products). Apply at azandmeapp.com or 1-800-292-6363.",
+        link:"https://www.azandmeapp.com/included-medications" }
+    ]
+  },
+  {
+    name:"Fasenra", generic:"benralizumab", aliases:["fasenra","benralizumab"],
+    use:"Biologic for severe eosinophilic asthma",
+    programs:[
+      { title:"Fasenra Savings Program", who:"commercial", speed:"instant",
+        desc:"Eligible commercially insured patients may pay as little as $0 per injection (max ~$13,000/year; verify). Not valid with government insurance.",
+        link:"https://www.azpatientsupport.com" },
+      { title:"AZ&Me Prescription Savings Program", who:"uninsured or medicare", speed:"days",
+        desc:"AstraZeneca's program may provide this medicine free to eligible patients who are uninsured OR have Medicare and meet income limits (about 300% of the federal poverty level; up to 500% for rare-disease products). Apply at azandmeapp.com or 1-800-292-6363.",
+        link:"https://www.azandmeapp.com/included-medications" }
+    ]
+  },
+  {
+    name:"Imfinzi", generic:"durvalumab", aliases:["imfinzi","durvalumab"],
+    use:"Immunotherapy (PD-L1 inhibitor) for several cancers",
+    programs:[
+      { title:"Imfinzi Co-pay Savings (Access 360)", who:"commercial", speed:"instant",
+        desc:"Eligible commercially insured patients may reduce out-of-pocket cost through AstraZeneca Access 360 (verify amount). Not valid with Medicare, Medicaid, or other government insurance. Access 360: 1-844-275-2360.",
+        link:"https://www.azpatientsupport.com" },
+      { title:"AZ&Me Prescription Savings Program", who:"uninsured or medicare", speed:"days",
+        desc:"AstraZeneca's program may provide this medicine free to eligible patients who are uninsured OR have Medicare and meet income limits (about 300% of the federal poverty level; up to 500% for rare-disease products). Apply at azandmeapp.com or 1-800-292-6363.",
+        link:"https://www.azandmeapp.com/included-medications" }
+    ]
+  },
+  {
+    name:"Imjudo", generic:"tremelimumab", aliases:["imjudo","tremelimumab"],
+    use:"Immunotherapy (CTLA-4 inhibitor) for liver and lung cancer",
+    programs:[
+      { title:"Imjudo Co-pay Savings (Access 360)", who:"commercial", speed:"instant",
+        desc:"Eligible commercially insured patients may reduce out-of-pocket cost through AstraZeneca Access 360 (verify amount). Not valid with Medicare, Medicaid, or other government insurance. Access 360: 1-844-275-2360.",
+        link:"https://www.azpatientsupport.com" },
+      { title:"AZ&Me Prescription Savings Program", who:"uninsured or medicare", speed:"days",
+        desc:"AstraZeneca's program may provide this medicine free to eligible patients who are uninsured OR have Medicare and meet income limits (about 300% of the federal poverty level; up to 500% for rare-disease products). Apply at azandmeapp.com or 1-800-292-6363.",
+        link:"https://www.azandmeapp.com/included-medications" }
+    ]
+  },
+  {
+    name:"Lynparza", generic:"olaparib", aliases:["lynparza","olaparib"],
+    use:"Oral cancer therapy (PARP inhibitor) — ovarian, breast, prostate, pancreatic",
+    programs:[
+      { title:"Lynparza Co-pay Savings (Access 360)", who:"commercial", speed:"instant",
+        desc:"Eligible commercially insured patients may reduce out-of-pocket cost through AstraZeneca Access 360 (verify amount). Not valid with Medicare, Medicaid, or other government insurance. Access 360: 1-844-275-2360.",
+        link:"https://www.azpatientsupport.com" },
+      { title:"AZ&Me Prescription Savings Program", who:"uninsured or medicare", speed:"days",
+        desc:"AstraZeneca's program may provide this medicine free to eligible patients who are uninsured OR have Medicare and meet income limits (about 300% of the federal poverty level; up to 500% for rare-disease products). Apply at azandmeapp.com or 1-800-292-6363.",
+        link:"https://www.azandmeapp.com/included-medications" }
+    ]
+  },
+  {
+    name:"Saphnelo", generic:"anifrolumab", aliases:["saphnelo","anifrolumab"],
+    use:"Biologic for systemic lupus erythematosus (SLE)",
+    programs:[
+      { title:"Saphnelo Co-pay Savings", who:"commercial", speed:"instant",
+        desc:"Eligible commercially insured patients may pay as little as $0 per administration (max ~$16,500/year; verify). Not valid with government insurance.",
+        link:"https://www.azpatientsupport.com" },
+      { title:"AZ&Me Prescription Savings Program", who:"uninsured or medicare", speed:"days",
+        desc:"AstraZeneca's program may provide this medicine free to eligible patients who are uninsured OR have Medicare and meet income limits (about 300% of the federal poverty level; up to 500% for rare-disease products). Apply at azandmeapp.com or 1-800-292-6363.",
+        link:"https://www.azandmeapp.com/included-medications" }
+    ]
+  },
+  {
+    name:"Tagrisso", generic:"osimertinib", aliases:["tagrisso","osimertinib"],
+    use:"Oral cancer therapy (EGFR inhibitor) for non-small cell lung cancer",
+    programs:[
+      { title:"Tagrisso Co-pay Savings", who:"commercial", speed:"instant",
+        desc:"Eligible commercially insured patients may reduce out-of-pocket cost through AstraZeneca Access 360 (verify amount). Not valid with Medicare, Medicaid, or other government insurance. Access 360: 1-844-275-2360.",
+        link:"https://www.azpatientsupport.com" },
+      { title:"AZ&Me Prescription Savings Program", who:"uninsured or medicare", speed:"days",
+        desc:"AstraZeneca's program may provide this medicine free to eligible patients who are uninsured OR have Medicare and meet income limits (about 300% of the federal poverty level; up to 500% for rare-disease products). Apply at azandmeapp.com or 1-800-292-6363.",
+        link:"https://www.azandmeapp.com/included-medications" }
+    ]
+  },
+  {
+    name:"Truqap", generic:"capivasertib", aliases:["truqap","capivasertib"],
+    use:"Oral cancer therapy (AKT inhibitor) for HR+/HER2- breast cancer",
+    programs:[
+      { title:"Truqap Co-pay Savings (Access 360)", who:"commercial", speed:"instant",
+        desc:"Eligible commercially insured patients may reduce out-of-pocket cost through AstraZeneca Access 360 (verify amount). Not valid with Medicare, Medicaid, or other government insurance. Access 360: 1-844-275-2360.",
+        link:"https://www.azpatientsupport.com" },
+      { title:"AZ&Me Prescription Savings Program", who:"uninsured or medicare", speed:"days",
+        desc:"AstraZeneca's program may provide this medicine free to eligible patients who are uninsured OR have Medicare and meet income limits (about 300% of the federal poverty level; up to 500% for rare-disease products). Apply at azandmeapp.com or 1-800-292-6363.",
+        link:"https://www.azandmeapp.com/included-medications" }
+    ]
+  },
+  {
+    name:"Wainua", generic:"eplontersen", aliases:["wainua","eplontersen"],
+    use:"For hereditary transthyretin amyloidosis with polyneuropathy (hATTR-PN)",
+    programs:[
+      { title:"Wainua Way Savings", who:"commercial", speed:"instant",
+        desc:"Eligible commercially insured patients may reduce their cost (verify). Not valid with government insurance. 1-844-292-4682.",
+        link:"https://www.azpatientsupport.com" },
+      { title:"AZ&Me Prescription Savings Program", who:"uninsured or medicare", speed:"days",
+        desc:"AstraZeneca's program may provide this medicine free to eligible patients who are uninsured OR have Medicare and meet income limits (about 300% of the federal poverty level; up to 500% for rare-disease products). Apply at azandmeapp.com or 1-800-292-6363.",
+        link:"https://www.azandmeapp.com/included-medications" }
+    ]
+  },
+  {
+    name:"Advair", generic:"fluticasone propionate/salmeterol", aliases:["advair","salmeterol","wixela"],
+    use:"Asthma / COPD maintenance inhaler (ICS + LABA)",
+    programs:[
+      { title:"Generic fluticasone/salmeterol (Wixela Inhub) — compare cash price", who:"any", speed:"instant",
+        desc:"Wixela Inhub is the AB-rated generic of Advair Diskus and is usually far cheaper than brand. Compare cash prices before anything else.",
+        links:[
+          { label:"GoodRx (fluticasone/salmeterol)", url:"https://www.goodrx.com/fluticasone-salmeterol" },
+          { label:"SingleCare (fluticasone/salmeterol)", url:"https://www.singlecare.com/prescription/fluticasone-salmeterol" }
+        ] },
+      { title:"GSK Dollars-Off Coupon", who:"uninsured or commercial", speed:"instant",
+        desc:"For patients with or without insurance — cash-paying (uninsured) or commercially insured, including Marketplace/Exchange plans. Lowers your out-of-pocket cost (verify the amount for this product). NOT valid with Medicare, Medicaid, or other government plans; activation required.",
+        link:"https://gskforyou.com/programs/gsk-coupons-free-trials/" },
+      { title:"GSK Direct to You (cash price)", who:"medicaid / government plan or uninsured or commercial", speed:"days",
+        desc:"Cash-pay mail-order direct from GSK — no insurance is billed, so it works even on Medicaid, Medicare, or other government plans where coupons can't be used. Advair Diskus about $35–$64 by strength; Advair HFA about $125–$220 (plus up to $25 processing/shipping; verify). Provider sends the Rx to GSK for You Pharmacy (Alto); 800-874-5881.",
+        link:"https://gskforyou.com/programs/direct-to-you/" },
+      { title:"GSK Patient Assistance Program Foundation", who:"medicare or uninsured", speed:"days",
+        desc:"For patients who are uninsured OR on Medicare who meet income rules — may provide the medicine at no cost. This is the route for Medicare patients, who can't use the coupon. Check eligibility at gskpaf.org.",
+        link:"https://gskpaf.org/gsk/prescription-medicine-patient-assistance/" }
+    ]
+  },
+  {
+    name:"Anoro Ellipta", generic:"umeclidinium/vilanterol", aliases:["anoro","umeclidinium","vilanterol"],
+    use:"COPD maintenance inhaler (LAMA + LABA)",
+    programs:[
+      { title:"GSK Dollars-Off Coupon", who:"uninsured or commercial", speed:"instant",
+        desc:"For patients with or without insurance — cash-paying (uninsured) or commercially insured, including Marketplace/Exchange plans. Lowers your out-of-pocket cost (verify the amount for this product). NOT valid with Medicare, Medicaid, or other government plans; activation required.",
+        link:"https://gskforyou.com/programs/gsk-coupons-free-trials/" },
+      { title:"GSK Direct to You (cash price)", who:"medicaid / government plan or uninsured or commercial", speed:"days",
+        desc:"Cash-pay mail-order direct from GSK — no insurance is billed, so it works even on Medicaid, Medicare, or other government plans where coupons can't be used. Anoro about $222.94 (plus up to $25 processing/shipping; verify). Provider sends the Rx to GSK for You Pharmacy (Alto); 800-874-5881.",
+        link:"https://gskforyou.com/programs/direct-to-you/" },
+      { title:"GSK Patient Assistance Program Foundation", who:"medicare or uninsured", speed:"days",
+        desc:"For patients who are uninsured OR on Medicare who meet income rules — may provide the medicine at no cost. This is the route for Medicare patients, who can't use the coupon. Check eligibility at gskpaf.org.",
+        link:"https://gskpaf.org/" }
+    ]
+  },
+  {
+    name:"Arnuity Ellipta", generic:"fluticasone furoate", aliases:["arnuity","fluticasone furoate"],
+    use:"Asthma maintenance inhaler (inhaled corticosteroid)",
+    programs:[
+      { title:"GSK Dollars-Off Coupon", who:"uninsured or commercial", speed:"instant",
+        desc:"For patients with or without insurance — cash-paying (uninsured) or commercially insured, including Marketplace/Exchange plans. Lowers your out-of-pocket cost (verify the amount for this product). NOT valid with Medicare, Medicaid, or other government plans; activation required.",
+        link:"https://gskforyou.com/programs/gsk-coupons-free-trials/" },
+      { title:"GSK Direct to You (cash price)", who:"medicaid / government plan or uninsured or commercial", speed:"days",
+        desc:"Cash-pay mail-order direct from GSK — no insurance is billed, so it works even on Medicaid, Medicare, or other government plans where coupons can't be used. Arnuity about $78–$104 by strength (plus up to $25 processing/shipping; verify). Provider sends the Rx to GSK for You Pharmacy (Alto); 800-874-5881.",
+        link:"https://gskforyou.com/programs/direct-to-you/" },
+      { title:"GSK Patient Assistance Program Foundation", who:"medicare or uninsured", speed:"days",
+        desc:"For patients who are uninsured OR on Medicare who meet income rules — may provide the medicine at no cost. This is the route for Medicare patients, who can't use the coupon. Check eligibility at gskpaf.org.",
+        link:"https://gskpaf.org/" }
+    ]
+  },
+  {
+    name:"Blujepa", generic:"gepotidacin", aliases:["blujepa","gepotidacin"],
+    use:"Oral antibiotic for uncomplicated urinary tract infection",
+    programs:[
+      { title:"GSK Dollars-Off Coupon", who:"uninsured or commercial or uninsured or commercial", speed:"instant",
+        desc:"For patients with or without insurance — cash-paying (uninsured) or commercially insured, including Marketplace/Exchange plans. Lowers your out-of-pocket cost (verify the amount for this product). NOT valid with Medicare, Medicaid, or other government plans; activation required.",
+        link:"https://gskforyou.com/programs/gsk-coupons-free-trials/" },
+      { title:"GSK Patient Assistance Program Foundation", who:"medicare or uninsured", speed:"days",
+        desc:"For patients who are uninsured OR on Medicare who meet income rules — may provide the medicine at no cost. This is the route for Medicare patients, who can't use the coupon. Check eligibility at gskpaf.org.",
+        link:"https://gskpaf.org/" }
+    ]
+  },
+  {
+    name:"Incruse Ellipta", generic:"umeclidinium", aliases:["incruse"],
+    use:"COPD maintenance inhaler (LAMA)",
+    programs:[
+      { title:"GSK Dollars-Off Coupon", who:"uninsured or commercial", speed:"instant",
+        desc:"For patients with or without insurance — cash-paying (uninsured) or commercially insured, including Marketplace/Exchange plans. Lowers your out-of-pocket cost (verify the amount for this product). NOT valid with Medicare, Medicaid, or other government plans; activation required.",
+        link:"https://gskforyou.com/programs/gsk-coupons-free-trials/" },
+      { title:"GSK Direct to You (cash price)", who:"medicaid / government plan or uninsured or commercial", speed:"days",
+        desc:"Cash-pay mail-order direct from GSK — no insurance is billed, so it works even on Medicaid, Medicare, or other government plans where coupons can't be used. Incruse about $134.20 (plus up to $25 processing/shipping; verify). Provider sends the Rx to GSK for You Pharmacy (Alto); 800-874-5881.",
+        link:"https://gskforyou.com/programs/direct-to-you/" },
+      { title:"GSK Patient Assistance Program Foundation", who:"medicare or uninsured", speed:"days",
+        desc:"For patients who are uninsured OR on Medicare who meet income rules — may provide the medicine at no cost. This is the route for Medicare patients, who can't use the coupon. Check eligibility at gskpaf.org.",
+        link:"https://gskpaf.org/" }
+    ]
+  },
+  {
+    name:"Serevent Diskus", generic:"salmeterol", aliases:["serevent"],
+    use:"Asthma / COPD long-acting bronchodilator (LABA)",
+    programs:[
+      { title:"GSK Dollars-Off Coupon", who:"uninsured or commercial", speed:"instant",
+        desc:"For patients with or without insurance — cash-paying (uninsured) or commercially insured, including Marketplace/Exchange plans. Lowers your out-of-pocket cost (verify the amount for this product). NOT valid with Medicare, Medicaid, or other government plans; activation required.",
+        link:"https://gskforyou.com/programs/gsk-coupons-free-trials/" },
+      { title:"GSK Patient Assistance Program Foundation", who:"medicare or uninsured", speed:"days",
+        desc:"For patients who are uninsured OR on Medicare who meet income rules — may provide the medicine at no cost. This is the route for Medicare patients, who can't use the coupon. Check eligibility at gskpaf.org.",
+        link:"https://gskpaf.org/" }
+    ]
+  },
+  {
+    name:"Ventolin HFA", generic:"albuterol sulfate", aliases:["ventolin","albuterol"],
+    use:"Rescue inhaler — short-acting bronchodilator (SABA)",
+    programs:[
+      { title:"Generic albuterol — compare cash price", who:"any", speed:"instant",
+        desc:"Generic albuterol HFA is usually the cheapest route by far for a rescue inhaler — often beating every program. Compare cash prices first.",
+        links:[
+          { label:"GoodRx (albuterol)", url:"https://www.goodrx.com/albuterol" },
+          { label:"SingleCare (albuterol HFA)", url:"https://www.singlecare.com/prescription/albuterol-sulfate-hfa" }
+        ] },
+      { title:"GSK Dollars-Off Coupon", who:"uninsured or commercial", speed:"instant",
+        desc:"For patients with or without insurance — cash-paying (uninsured) or commercially insured, including Marketplace/Exchange plans. Lowers your out-of-pocket cost (verify the amount for this product). NOT valid with Medicare, Medicaid, or other government plans; activation required.",
+        link:"https://gskforyou.com/programs/gsk-coupons-free-trials/" },
+      { title:"GSK Direct to You (cash price)", who:"medicaid / government plan or uninsured or commercial", speed:"days",
+        desc:"Cash-pay mail-order direct from GSK — no insurance is billed, so it works even on Medicaid, Medicare, or other government plans where coupons can't be used. Ventolin about $25.80 (plus up to $25 processing/shipping; verify). Provider sends the Rx to GSK for You Pharmacy (Alto); 800-874-5881.",
+        link:"https://gskforyou.com/programs/direct-to-you/" },
+      { title:"GSK Patient Assistance Program Foundation", who:"medicare or uninsured", speed:"days",
+        desc:"For patients who are uninsured OR on Medicare who meet income rules — may provide the medicine at no cost. This is the route for Medicare patients, who can't use the coupon. Check eligibility at gskpaf.org.",
+        link:"https://gskpaf.org/" }
+    ]
+  },
+{
+    name:"Farxiga", generic:"dapagliflozin", aliases:["dapagliflozin"],
+    use:"Type 2 diabetes / heart & kidney protection (SGLT2 inhibitor)",
+    programs:[
+      { title:"Generic dapagliflozin — compare cash price", who:"any", speed:"instant",
+        desc:"Generic dapagliflozin launched in 2026, so a cash discount card is often the cheapest route now. (AstraZeneca's AZ&Me program stopped taking new Farxiga patients in May 2026 due to the generic.) Compare both.",
+        links:[
+          { label:"GoodRx (dapagliflozin)", url:"https://www.goodrx.com/dapagliflozin" },
+          { label:"SingleCare (dapagliflozin)", url:"https://www.singlecare.com/prescription/dapagliflozin" }
+        ] },
+      { title:"FARXIGA Savings Card", who:"commercial", speed:"instant",
+        desc:"Commercially insured patients may pay as little as $0 (verify). Not valid with Medicare/Medicaid or any government plan. 1-855-332-7944.",
+        link:"https://www.farxiga.com/savings-support" }
+    ]
+  },
+  {
+    name:"Entresto", generic:"sacubitril/valsartan", aliases:["sacubitril","valsartan"],
+    use:"Heart failure",
+    programs:[
+      { title:"Generic sacubitril/valsartan — compare cash price", who:"any", speed:"instant",
+        desc:"A generic launched in 2025 and is far cheaper than brand — often about $45/month cash. Compare before using the copay card.",
+        links:[
+          { label:"GoodRx (sacubitril/valsartan)", url:"https://www.goodrx.com/sacubitril-valsartan" },
+          { label:"SingleCare (sacubitril/valsartan)", url:"https://www.singlecare.com/prescription/sacubitril-valsartan" }
+        ] },
+      { title:"ENTRESTO Co-pay Card", who:"commercial", speed:"instant",
+        desc:"Commercially insured patients may pay as little as $10 for up to a 90-day supply (annual cap ~$4,100; verify). Not valid with Medicare/Medicaid.",
+        link:"https://www.entresto.com/financial-support" },
+      { title:"Generic sacubitril/valsartan (Entresto) — compare cash price", who:"any", speed:"instant",
+        desc:"Generic sacubitril/valsartan launched in 2025, so a cash discount card (GoodRx/SingleCare) is often the cheapest route now.", 
+        link:"https://www.goodrx.com/entresto" },
+
+    ]
+  },
+  {
+    name:"Breo Ellipta", generic:"fluticasone furoate/vilanterol", aliases:["breo","fluticasone","vilanterol"],
+    use:"COPD / asthma maintenance inhaler",
+    programs:[
+      { title:"Breo 'Pay No More Than $35' Coupon", who:"uninsured or commercial", speed:"instant",
+        desc:"For patients with or without insurance — cash-paying (uninsured) or commercially insured, including Marketplace/Exchange plans. Pay no more than $35 (verify exact amount). NOT valid with Medicare, Medicaid, or other government plans; activation required.",
+        link:"https://gskforyou.com/programs/gsk-coupons-free-trials/" },
+      { title:"GSK Patient Assistance Program Foundation", who:"medicare or uninsured", speed:"days",
+        desc:"For patients who are uninsured OR on Medicare and meet income rules — may provide Breo at no cost. This is the route for Medicare patients, who can't use the coupon. Check eligibility at gskpaf.org.",
+        link:"https://gskpaf.org/gsk/prescription-medicine-patient-assistance/" }
+    ]
+  },
+  {
+    name:"Trelegy Ellipta", generic:"fluticasone furoate/umeclidinium/vilanterol", aliases:["trelegy","umeclidinium"],
+    use:"COPD / asthma maintenance inhaler (triple therapy)",
+    programs:[
+      { title:"GSK Dollars-Off Coupon", who:"uninsured or commercial", speed:"instant",
+        desc:"For patients with or without insurance — cash-paying (uninsured) or commercially insured, including Marketplace/Exchange plans. Lowers your out-of-pocket cost (verify the amount for this product). NOT valid with Medicare, Medicaid, or other government plans; activation required.",
+        link:"https://gskforyou.com/programs/gsk-coupons-free-trials/" },
+      { title:"GSK Patient Assistance Program Foundation", who:"medicare or uninsured", speed:"days",
+        desc:"For patients who are uninsured OR on Medicare who meet income rules — may provide the medicine at no cost. This is the route for Medicare patients, who can't use the coupon. Check eligibility at gskpaf.org.",
+        link:"https://gskpaf.org/gsk/prescription-medicine-patient-assistance/" }
+    ]
+  },
+  {
+    name:"Symbicort", generic:"budesonide/formoterol", aliases:["budesonide","formoterol"],
+    use:"COPD / asthma maintenance inhaler",
+    programs:[
+      { title:"Generic budesonide/formoterol — compare cash price", who:"any", speed:"instant",
+        desc:"A generic exists; a GoodRx/SingleCare cash price is often the cheapest route (verify).",
+        link:"https://www.goodrx.com/symbicort" },
+      { title:"Symbicort Savings Card", who:"commercial", speed:"instant",
+        desc:"Commercially insured patients may pay as little as $0 (verify). Not valid with government insurance.",
+        link:"https://www.symbicort.com" },
+      { title:"AZ&Me Prescription Savings Program", who:"uninsured", speed:"days",
+        desc:"Free Symbicort for qualifying uninsured/underinsured patients (income at or below 400% FPL). Your doctor submits an enrollment form.",
+        link:"https://www.azandmeapp.com/included-medications" }
+    ]
+  },
+  {
+    name:"Eliquis", generic:"apixaban", aliases:["apixaban","blood thinner"],
+    use:"Blood thinner (anticoagulant)",
+    programs:[
+      { title:"ELIQUIS Free 30-Day Trial", who:"any", speed:"instant",
+        desc:"One-time free 30-day supply for patients NEW to Eliquis (never filled it before). Nothing is billed to insurance, so it CAN be used on Medicaid/Medicare — unlike the copay card. One per lifetime; verify current terms.",
+        link:"https://www.eliquis.com" },
+      { title:"ELIQUIS $10 Co-pay Card", who:"commercial", speed:"instant",
+        desc:"Commercially insured patients may pay as little as ~$10 per 30-day supply (verify). Not valid with Medicaid/Medicare or any government plan.",
+        link:"https://www.eliquis.com" },
+      { title:"BMS Patient Assistance Foundation", who:"uninsured", speed:"days",
+        desc:"Free Eliquis for eligible uninsured patients with financial hardship. Apply at bmspaf.org or call 800-736-0003.",
+        link:"https://www.bmspaf.org" },
+      { title:"ELIQUIS Direct to Patient Program", who:"any", speed:"instant",
+        desc:"Mail-order direct from BMS — no insurance is billed, so it works even on Medicaid, Medicare, or other government plans where coupons can't be used.",
+        link:"https://www.eliquis.bmscustomerconnect.com/assets/commercial/us/eliquisbmscustomerconnect/en/pdf/dtp_eliquis.pdf" }
+    ]
+  },
+  {
+    name:"Dificid", generic:"fidaxomicin", aliases:["fidaxomicin"],
+    use:"Antibiotic for C. difficile infection",
+    programs:[
+      { title:"Merck Dificid Savings Coupon", who:"commercial", speed:"instant",
+        desc:"Brand Dificid: commercially insured patients may pay about $50 per prescription, up to 4 fills (verify). Not valid with government insurance. Enroll at dificid.com or 877-264-2454.",
+        link:"https://www.dificid.com/savings-coupon/" },
+      { title:"Merck Patient Assistance Program", who:"uninsured", speed:"days",
+        desc:"May provide Dificid free to eligible uninsured patients. Apply via the link.",
+        link:"https://www.merckhelps.com/DIFICID%20Tablets" }
+    ]
+  },
+  {
+    name:"Jardiance", generic:"empagliflozin", aliases:["empagliflozin"],
+    use:"Type 2 diabetes / heart & kidney protection (SGLT2 inhibitor)",
+    programs:[
+      { title:"Jardiance Savings Card", who:"commercial", speed:"instant",
+        desc:"Commercially insured patients may pay as little as ~$10/month (verify). Not valid with Medicare/Medicaid. 866-279-8990.",
+        link:"https://www.jardiance.com" },
+      { title:"Boehringer Ingelheim Cares Foundation", who:"uninsured or Medicare", speed:"days",
+        desc:"Free Jardiance for qualifying uninsured/underinsured patients meeting income rules. 800-556-8317.",
+        link:"https://www.bipatientassistance.com" }
+    ]
+  },
+  {
+    name:"Trulicity", generic:"dulaglutide", aliases:["dulaglutide"],
+    use:"Type 2 diabetes (GLP-1 receptor agonist)",
+    programs:[
+      { title:"Trulicity Savings Card", who:"commercial", speed:"instant",
+        desc:"Savings card for commercially insured patients (verify). Not valid with government insurance.",
+        link:"https://trulicity.lilly.com/savings-resources" },
+      { title:"Lilly Cares Foundation", who:"uninsured", speed:"days",
+        desc:"Manufacturer PAP. Note: Trulicity eligibility has been tightened (~300% FPL, limited new patients) — verify before counting on it.",
+        link:"https://www.lillycares.com" }
+    ]
+  },
+  {
+    name:"Xarelto", generic:"rivaroxaban", aliases:["rivaroxaban"],
+    use:"Blood thinner (anticoagulant)",
+    programs:[
+      { title:"Janssen CarePath Savings Program", who:"commercial", speed:"instant",
+        desc:"Copay savings for commercially insured patients (verify). Not valid with government insurance.",
+        link:"https://www.xarelto-us.com/xarelto-cost/" },
+      { title:"Johnson & Johnson Patient Assistance Foundation", who:"any", speed:"days",
+        desc:"May provide Xarelto free to eligible uninsured patients or those still struggling to cover costs. Verify current program at the link.",
+        link:"https://www.jnjwithme.com" }
+    ]
+  }
+];
+
+/* ---- EDIT HERE #2: NATIONAL RESOURCES ---- */
+const RESOURCES = [
+  { group:"Search engines for assistance (start here for any drug)", items:[
+    { title:"NeedyMeds", desc:"Nonprofit database of assistance programs for ~5,000 medicines, plus a free discount card and lists of free/low-cost clinics.", link:"https://www.needymeds.org" },
+    { title:"Medicine Assistance Tool (MAT)", desc:"Search by medication, insurance, income, and location to find matching programs.", link:"https://medicineassistancetool.org" },
+    { title:"RxAssist", desc:"Directory of manufacturer patient assistance programs.", link:"https://www.rxassist.org" }
+  ]},
+  { group:"Cash discount cards (uninsured, or instead of insurance)", items:[
+    { title:"GoodRx", desc:"Free discounted cash prices at most pharmacies. Compare against SingleCare.", link:"https://www.goodrx.com" },
+    { title:"SingleCare", desc:"Free discounted cash prices; often beats or undercuts GoodRx on a given drug. Check both.", link:"https://www.singlecare.com" }
+  ]},
+  { group:"Charity copay help (mainly for insured / Medicare)", items:[
+    { title:"PAN Foundation", desc:"Disease-specific copay grants. (Merging with Patient Advocate Foundation; a unified program, TotalAssist, launches July 2026.)", link:"https://www.panfoundation.org" },
+    { title:"HealthWell Foundation", desc:"Copay and premium assistance by disease fund. 800-675-8416.", link:"https://www.healthwellfoundation.org" },
+    { title:"Patient Advocate Foundation Co-Pay Relief", desc:"Copay grants and case-manager help navigating coverage.", link:"https://www.copays.org" }
+  ]},
+  { group:"Uninsured / low-income medicine sources", items:[
+    { title:"RxOutreach", desc:"Nonprofit mail-order pharmacy offering low-cost generics to people who are uninsured or underinsured.", link:"https://rxoutreach.org" },
+    { title:"SIRUM", desc:"Redistributes surplus, unexpired medicine to people in need.", link:"https://sirum.org" }
+  ]},
+  { group:"For people on Medicare", items:[
+    { title:"Extra Help (Low-Income Subsidy)", desc:"Federal program that lowers Part D premiums, deductibles, and copays for people with limited income. Apply through Social Security.", link:"https://www.ssa.gov/medicare/part-d-extra-help" },
+    { title:"Medicare Plan Finder", desc:"Compare Part D plans — the right plan can cut a specific drug's cost dramatically.", link:"https://www.medicare.gov/plan-compare" }
+  ]}
+];
+
+
+
+const INS_LABELS = {
+  commercial:"commercial/employer", medicare:"Medicare", medicaid:"Medicaid",
+  uninsured:"uninsured", unsure:"unsure", any:"anyone"
+};
+
+const state = { ins:"", time:"" };
+
+// ---- Tabs ----
+const tabs = document.querySelectorAll('nav [role=tab]');
+tabs.forEach(btn=>btn.addEventListener('click',()=>{
+  tabs.forEach(b=>b.setAttribute('aria-selected', b===btn));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById(btn.dataset.tab).classList.add('active');
+}));
+
+// ---- Node 1: insurance ----
+document.getElementById('ins').addEventListener('change', e=>{
+  state.ins = e.target.value;
+  renderFlow();
+});
+
+// ---- Node 2: timing ----
+document.querySelectorAll('.choice').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    state.time = btn.dataset.time;
+    document.querySelectorAll('.choice').forEach(b=>b.setAttribute('aria-pressed', b===btn));
+    renderFlow();
+  });
+});
+
+// ---- Node 3: drug search ----
+document.getElementById('q').addEventListener('input', renderDrug);
+
+// Show/hide each step as the patient's answers come in.
+function renderFlow(){
+  const step2 = document.getElementById('step2');
+  const step3 = document.getElementById('step3');
+
+  if(!state.ins){
+    step2.classList.add('hidden'); step3.classList.add('hidden');
+    document.getElementById('drugResult').innerHTML='';
+    return;
+  }
+  step2.classList.remove('hidden');
+
+  if(!state.time){
+    step3.classList.add('hidden');
+    document.getElementById('drugResult').innerHTML='';
+    return;
+  }
+  step3.classList.remove('hidden');
+  renderDrug(); // results — and the situation note — appear here at the end
+}
+
+
+
+// Short situation-specific notes.
+function special(){
+  const ins = state.ins, time = state.time;
+  if(ins==='medicaid'){
+    const route = time==='today'
+      ? 'A copay card won\'t work. The realistic same-day move is a cash discount card; then look into in-state Medicaid or a PAP for the longer term.'
+      : 'A copay card won\'t work. Best paths: help the patient apply for Medicaid in your state, or start a manufacturer Patient Assistance Program.';
+    return callout('Medicaid across state lines', 'Medicaid generally only covers prescriptions filled <strong>in the state that issued it</strong> (except true emergencies). '+route, 'warn');
+  }
+  if(ins==='uninsured' && time==='wait'){
+    return callout('Strongest option', 'For uninsured patients with a little time, a manufacturer <strong>Patient Assistance Program</strong> often provides the drug free — it just takes an application.');
+  }
+  if(ins==='medicare'){
+    return callout('Note on Medicare', 'Copay cards can\'t be used. Look at charity copay foundations, <strong>Extra Help / Low-Income Subsidy</strong>, a manufacturer PAP, or comparing a cash discount price against the plan copay.');
+  }
+  return '';
+}
+
+// ---- drug lookup (uses the timing choice to order results) ----
+function renderDrug(){
+  const term = (document.getElementById('q').value||'').trim().toLowerCase();
+  const box = document.getElementById('drugResult');
+  if(!term){ box.innerHTML=''; return; }
+
+  const note = special(); // situation-specific guidance, shown with the final results
+  const hits = DRUGS.filter(d=>{
+    const hay = [d.name, d.generic, ...(d.aliases||[])].join(' ').toLowerCase();
+    return hay.includes(term);
+  });
+
+  if(hits.length===0){
+    box.innerHTML = note + callout('No match yet',
+      'This drug isn\'t seeded yet — but the search tools under <strong>Other Resources</strong> (NeedyMeds, Medicine Assistance Tool) cover almost any medication. You can also add it to this tool in a couple of minutes; see the note at the bottom of the page.');
+    return;
+  }
+
+  box.innerHTML = note + hits.map(d=>{
+    // When "today" is chosen, float the instant programs to the top.
+    let progs = d.programs.slice();
+    if(state.time==='today'){
+      progs.sort((a,b)=> (a.speed==='instant'?0:1) - (b.speed==='instant'?0:1));
+    }
+    const list = progs.map(p=>{
+      const whoLabel = INS_LABELS[p.who] || p.who;
+      const whoTxt = p.who==='any' ? 'anyone' : 'for '+whoLabel;
+      const speedBadge = p.speed==='instant'
+        ? '<span class="badge b-instant">works today</span>'
+        : '<span class="badge b-slow">ready in a few days</span>';
+      return `<div class="prog">
+        <h3>${p.title}</h3>
+        <span class="badge b-info">${whoTxt}</span>${speedBadge}
+        <p>${p.desc}</p>
+        ${(p.links||(p.link?[{label:'Open official page',url:p.link}]:[])).map(l=>`<a href="${l.url}" target="_blank" rel="noopener">${l.label} →</a>`).join(' &nbsp;·&nbsp; ')}
+      </div>`;
+    }).join('');
+    return `<div class="card">
+      <h2>${d.name} <span class="muted small">(${d.generic})</span></h2>
+      <p class="muted">${d.use}</p>
+      ${list}
+    </div>`;
+  }).join('');
+}
+
+// ---- Other Resources hub ----
+function renderHub(){
+  document.getElementById('hub').innerHTML = RESOURCES.map(g=>{
+    const items = g.items.map(it=>`
+      <div class="prog"><h3>${it.title}</h3><p>${it.desc}</p>
+      <a href="${it.link}" target="_blank" rel="noopener">Open →</a></div>`).join('');
+    return `<div class="card"><h2>${g.group}</h2>${items}</div>`;
+  }).join('');
+}
+renderHub();
+
+// blue/orange note boxes
+function callout(title, body, kind){
+  return `<div class="callout ${kind==='warn'?'warn':''}"><strong>${title}.</strong> ${body}</div>`;
+}
+</script>
+</body>
+</html>
